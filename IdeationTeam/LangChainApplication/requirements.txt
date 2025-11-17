@@ -1,0 +1,29 @@
+# Core LangChain packages
+langchain==1.0.7
+langchain-community>=0.4.0
+langchain-openai>=1.0.0
+
+# LLM providers
+openai>=1.109.1
+
+# Document processing and retrieval
+arxiv>=2.1.0
+pypdf>=3.17.0
+python-dotenv>=1.0.0
+
+# Web scraping and API tools
+requests>=2.32.0
+beautifulsoup4>=4.12.0
+scholarly>=1.7.0
+
+# Data handling
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Vector stores (optional, for advanced retrieval)
+chromadb>=0.4.0
+faiss-cpu>=1.9.0
+
+# Utilities
+pydantic>=2.7.4
+tenacity>=8.2.0
