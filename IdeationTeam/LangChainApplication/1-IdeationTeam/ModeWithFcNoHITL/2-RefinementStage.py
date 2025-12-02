@@ -12,7 +12,7 @@ Output: Refined research questions with two-round feedback process
 
 import os
 import json
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from dotenv import load_dotenv
 import pandas as pd
@@ -70,7 +70,7 @@ class BaseRefinementAgent:
         self.agent_name = agent_name
         self.api_key = openai_api_key
         self.llm = ChatOpenAI(
-            model="gpt-4",
+            model="gpt-4o-mini",  # gpt-4o-mini, gpt-4o
             temperature=0.7,  # Higher temperature for creativity
             openai_api_key=self.api_key
         )
@@ -457,6 +457,78 @@ class RefinementOrchestrator:
         print(f"\n[Orchestrator] Feedback saved to {feedback_file}")
         
         return feedback
+    
+    def run_automated_refinement(
+        self,
+        literature_df: pd.DataFrame,
+        num_concepts: int = 10,
+        num_questions: int = 8
+    ) -> List[ResearchQuestion]:
+        """Run automated single-round refinement without human feedback."""
+        print(f"\n{'='*70}")
+        print(f"AUTOMATED RESEARCH QUESTION REFINEMENT")
+        print(f"{'='*70}")
+        
+        # Step 1: Ideator generates concepts
+        concepts = self.ideator.generate_concepts(
+            literature_df=literature_df,
+            feedback=None,
+            num_concepts=num_concepts
+        )
+        
+        # Step 2: Refiner formulates questions from concepts
+        questions = self.refiner.formulate_questions(
+            concepts=concepts,
+            literature_df=literature_df,
+            feedback=None,
+            num_questions=num_questions
+        )
+        
+        # Store results
+        self.all_concepts = concepts
+        self.all_questions = questions
+        
+        print(f"\n[Orchestrator] Generated {len(concepts)} concepts and {len(questions)} questions")
+        
+        return questions
+    
+    def print_concepts(self, top_n: int = 10):
+        """Print concepts."""
+        concepts = self.all_concepts
+        
+        print(f"\n{'='*70}")
+        print(f"RESEARCH CONCEPTS (Top {min(top_n, len(concepts))})")
+        print(f"{'='*70}\n")
+        
+        # Sort by novelty score
+        sorted_concepts = sorted(concepts, key=lambda x: x.novelty_score or 0, reverse=True)
+        
+        for i, concept in enumerate(sorted_concepts[:top_n], 1):
+            print(f"{i}. {concept.concept_title}")
+            print(f"   Novelty: {concept.novelty_score}")
+            print(f"   Description: {concept.description}")
+            print(f"   Key Themes: {', '.join(concept.key_themes)}")
+            print(f"   Literature Support: {', '.join(concept.literature_support[:3])}")
+            print()
+    
+    def print_questions(self, top_n: int = 10):
+        """Print questions."""
+        questions = self.all_questions
+        
+        print(f"\n{'='*70}")
+        print(f"RESEARCH QUESTIONS (Top {min(top_n, len(questions))})")
+        print(f"{'='*70}\n")
+        
+        # Sort by feasibility score
+        sorted_questions = sorted(questions, key=lambda x: x.feasibility_score or 0, reverse=True)
+        
+        for i, question in enumerate(sorted_questions[:top_n], 1):
+            print(f"{i}. {question.question}")
+            print(f"   Feasibility: {question.feasibility_score}")
+            print(f"   Rationale: {question.rationale}")
+            print(f"   Methodologies: {', '.join(question.methodology_hints)}")
+            print(f"   Related Concepts: {', '.join(question.related_concepts)}")
+            print()
     
     def save_results(self, filename: str, round_number: Optional[int] = None):
         """Save concepts and questions to JSON file."""

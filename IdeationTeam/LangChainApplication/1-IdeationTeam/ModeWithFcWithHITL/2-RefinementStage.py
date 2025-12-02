@@ -12,7 +12,7 @@ Output: Refined research questions with two-round feedback process
 
 import os
 import json
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from dotenv import load_dotenv
 import pandas as pd
@@ -70,7 +70,7 @@ class BaseRefinementAgent:
         self.agent_name = agent_name
         self.api_key = openai_api_key
         self.llm = ChatOpenAI(
-            model="gpt-4",
+            model="gpt-4o-mini",
             temperature=0.7,  # Higher temperature for creativity
             openai_api_key=self.api_key
         )

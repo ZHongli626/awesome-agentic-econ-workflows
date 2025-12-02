@@ -93,7 +93,7 @@ class Contextualizer:
         self.agent_name = "Contextualizer"
         self.api_key = openai_api_key
         self.llm = ChatOpenAI(
-            model="gpt-4",
+            model="gpt-4o-mini",  # gpt-4o-mini, gpt-4o
             temperature=0.5,
             openai_api_key=self.api_key
         )
@@ -200,7 +200,7 @@ class Finalizer:
         self.agent_name = "Finalizer"
         self.api_key = openai_api_key
         self.llm = ChatOpenAI(
-            model="gpt-4",
+            model="gpt-4o-mini",  # gpt-4o-mini, gpt-4o
             temperature=0.3,
             openai_api_key=self.api_key
         )
@@ -544,6 +544,62 @@ class IntegrationOrchestrator:
             )
             questions.append(q)
         return questions
+    
+    def run_automated_integration(
+        self,
+        questions: List[ResearchQuestion],
+        max_final_questions: int = 5
+    ) -> List[PrioritizedQuestion]:
+        """Run automated single-round integration without human feedback."""
+        print(f"\n{'='*70}")
+        print(f"AUTOMATED QUESTION INTEGRATION & PRIORITIZATION")
+        print(f"{'='*70}")
+        
+        # Step 1: Contextualizer provides theoretical framing
+        contextualized = self.contextualizer.contextualize_questions(
+            questions=questions,
+            feedback=None
+        )
+        
+        # Step 2: Finalizer synthesizes and prioritizes
+        prioritized = self.finalizer.synthesize_questions(
+            contextualized_questions=contextualized,
+            feedback=None,
+            max_questions=max_final_questions
+        )
+        
+        # Store results
+        self.round_results[1] = {
+            'contextualized': contextualized,
+            'prioritized': prioritized
+        }
+        
+        print(f"\n[Orchestrator] Generated {len(prioritized)} prioritized questions")
+        
+        return prioritized
+    
+    def print_prioritized_questions(self):
+        """Print prioritized questions."""
+        if not self.round_results:
+            print("No results to print")
+            return
+        
+        last_round = max(self.round_results.keys())
+        questions = self.round_results[last_round]['prioritized']
+        
+        print(f"\n{'='*70}")
+        print(f"PRIORITIZED RESEARCH QUESTIONS")
+        print(f"{'='*70}\n")
+        
+        for q in questions:
+            print(f"RANK {q.priority_rank} (Score: {q.priority_score})")
+            print(f"Question: {q.question}")
+            print(f"Theoretical Framework: {q.theoretical_framework[:200]}...")
+            print(f"Rationale: {q.rationale[:200]}...")
+            print(f"Methodology: {', '.join(q.methodology)}")
+            print(f"Expected Impact: {q.expected_impact[:150]}...")
+            print(f"Feasibility: {q.feasibility[:150]}...")
+            print()
     
     def save_results(self, filename: str, round_number: Optional[int] = None):
         """Save integration results to JSON file."""

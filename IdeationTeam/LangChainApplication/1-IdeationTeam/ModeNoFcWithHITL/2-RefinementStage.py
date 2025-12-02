@@ -12,7 +12,7 @@ Output: Refined research questions with two-round feedback process
 
 import os
 import json
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from dotenv import load_dotenv
 import pandas as pd

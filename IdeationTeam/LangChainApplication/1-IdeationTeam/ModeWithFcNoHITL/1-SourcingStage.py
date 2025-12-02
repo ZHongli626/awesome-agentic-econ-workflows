@@ -1,12 +1,16 @@
 """
-Multi-Agent Literature Sourcing Stage with Human-in-the-Loop
-This script uses specialized LangChain agents to gather literature with feedback rounds.
+Multi-Agent Literature Sourcing Stage with Firecrawl (No Human-in-the-Loop)
+This script uses specialized LangChain agents to gather literature with Firecrawl web scraping.
 
 Agents:
-- TrendSurfer: Identifies emerging trends and recent developments
-- TopicCrawler: Searches academic databases for peer-reviewed literature
+- TrendSurfer: Identifies emerging trends using arXiv + Firecrawl web scraping
+- TopicCrawler: Searches academic databases + Firecrawl for comprehensive coverage
 - ScholarSearcher: Finds highly-cited foundational papers
 - GreyScout: Discovers grey literature (reports, working papers, policy docs)
+
+Firecrawl Integration:
+- TrendSurfer: Scrapes recent blog posts, news articles, and research websites
+- TopicCrawler: Scrapes academic institution pages and research portals
 """
 
 import os
@@ -61,13 +65,14 @@ class HumanFeedback(BaseModel):
 class BaseAgent:
     """Base class for all literature sourcing agents."""
     
-    def __init__(self, name: str, openai_api_key: str):
+    def __init__(self, name: str, openai_api_key: str, firecrawl_api_key: Optional[str] = None):
         self.name = name
         self.llm = ChatOpenAI(
-            model="gpt-4",
+            model="gpt-4o-mini",  # gpt-4o-mini, gpt-4o
             temperature=0.3,
             openai_api_key=openai_api_key
         )
+        self.firecrawl_api_key = firecrawl_api_key
         self.results: List[LiteratureItem] = []
     
     def refine_query(self, research_topic: str, feedback: Optional[HumanFeedback] = None) -> SearchQuery:
@@ -80,10 +85,10 @@ class BaseAgent:
 
 
 class TrendSurfer(BaseAgent):
-    """Agent focused on identifying emerging trends and recent developments."""
+    """Agent focused on identifying emerging trends and recent developments using arXiv + Firecrawl."""
     
-    def __init__(self, openai_api_key: str):
-        super().__init__("TrendSurfer", openai_api_key)
+    def __init__(self, openai_api_key: str, firecrawl_api_key: Optional[str] = None):
+        super().__init__("TrendSurfer", openai_api_key, firecrawl_api_key)
     
     def refine_query(self, research_topic: str, feedback: Optional[HumanFeedback] = None) -> SearchQuery:
         """Generate queries focused on recent trends and developments."""
@@ -160,14 +165,77 @@ class TrendSurfer(BaseAgent):
         except Exception as e:
             print(f"[TrendSurfer] Error searching arXiv: {e}")
         
+        # Add Firecrawl web scraping for recent trends
+        if self.firecrawl_api_key:
+            firecrawl_results = self._search_with_firecrawl(query, max_results=5)
+            results.extend(firecrawl_results)
+        
+        return results
+    
+    def _search_with_firecrawl(self, query: str, max_results: int = 5) -> List[LiteratureItem]:
+        """Use Firecrawl to scrape recent blog posts, news articles, and research websites."""
+        print(f"[TrendSurfer] Using Firecrawl to scrape web content for: {query}")
+        results = []
+        
+        try:
+            # Firecrawl API endpoint for search
+            firecrawl_url = "https://api.firecrawl.dev/v1/search"
+            headers = {
+                "Authorization": f"Bearer {self.firecrawl_api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            # Search for recent content
+            payload = {
+                "query": query,
+                "limit": max_results,
+                "scrapeOptions": {
+                    "formats": ["markdown", "html"],
+                    "onlyMainContent": True
+                }
+            }
+            
+            response = requests.post(firecrawl_url, json=payload, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                for idx, item in enumerate(data.get("data", [])[:max_results]):
+                    # Extract content from Firecrawl response
+                    title = item.get("title", f"Web Content {idx + 1}")
+                    url = item.get("url", "")
+                    content = item.get("markdown", item.get("html", ""))
+                    
+                    # Extract abstract/summary (first 500 chars of content)
+                    abstract = content[:500] + "..." if len(content) > 500 else content
+                    
+                    lit_item = LiteratureItem(
+                        title=title,
+                        authors=["Web Source"],
+                        abstract=abstract,
+                        url=url,
+                        source="Firecrawl (Web)",
+                        agent="TrendSurfer",
+                        year=datetime.now().year,
+                        literature_type="web"
+                    )
+                    results.append(lit_item)
+                
+                print(f"[TrendSurfer] Firecrawl found {len(results)} web sources")
+            else:
+                print(f"[TrendSurfer] Firecrawl API error: {response.status_code}")
+        
+        except Exception as e:
+            print(f"[TrendSurfer] Error with Firecrawl: {e}")
+        
         return results
 
 
 class TopicCrawler(BaseAgent):
-    """Agent focused on comprehensive academic literature search."""
+    """Agent focused on comprehensive academic literature search + Firecrawl."""
     
-    def __init__(self, openai_api_key: str):
-        super().__init__("TopicCrawler", openai_api_key)
+    def __init__(self, openai_api_key: str, firecrawl_api_key: Optional[str] = None):
+        super().__init__("TopicCrawler", openai_api_key, firecrawl_api_key)
     
     def refine_query(self, research_topic: str, feedback: Optional[HumanFeedback] = None) -> SearchQuery:
         """Generate comprehensive academic search queries."""
@@ -253,6 +321,68 @@ class TopicCrawler(BaseAgent):
         
         except Exception as e:
             print(f"[TopicCrawler] Error searching Semantic Scholar: {e}")
+        
+        # Add Firecrawl web scraping for academic institution pages
+        if self.firecrawl_api_key:
+            firecrawl_results = self._search_with_firecrawl(query, max_results=3)
+            results.extend(firecrawl_results)
+        
+        return results
+    
+    def _search_with_firecrawl(self, query: str, max_results: int = 3) -> List[LiteratureItem]:
+        """Use Firecrawl to scrape academic institution pages and research portals."""
+        print(f"[TopicCrawler] Using Firecrawl to scrape academic content for: {query}")
+        results = []
+        
+        try:
+            # Firecrawl API endpoint for search
+            firecrawl_url = "https://api.firecrawl.dev/v1/search"
+            headers = {
+                "Authorization": f"Bearer {self.firecrawl_api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            # Search for academic content
+            payload = {
+                "query": f"{query} site:edu OR site:ac.uk OR research",
+                "limit": max_results,
+                "scrapeOptions": {
+                    "formats": ["markdown"],
+                    "onlyMainContent": True
+                }
+            }
+            
+            response = requests.post(firecrawl_url, json=payload, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                for idx, item in enumerate(data.get("data", [])[:max_results]):
+                    title = item.get("title", f"Academic Web Content {idx + 1}")
+                    url = item.get("url", "")
+                    content = item.get("markdown", "")
+                    
+                    # Extract abstract/summary
+                    abstract = content[:500] + "..." if len(content) > 500 else content
+                    
+                    lit_item = LiteratureItem(
+                        title=title,
+                        authors=["Academic Institution"],
+                        abstract=abstract,
+                        url=url,
+                        source="Firecrawl (Academic Web)",
+                        agent="TopicCrawler",
+                        year=datetime.now().year,
+                        literature_type="web"
+                    )
+                    results.append(lit_item)
+                
+                print(f"[TopicCrawler] Firecrawl found {len(results)} academic web sources")
+            else:
+                print(f"[TopicCrawler] Firecrawl API error: {response.status_code}")
+        
+        except Exception as e:
+            print(f"[TopicCrawler] Error with Firecrawl: {e}")
         
         return results
 
@@ -433,22 +563,25 @@ class GreyScout(BaseAgent):
 
 
 class MultiAgentOrchestrator:
-    """Orchestrates multiple agents with human-in-the-loop feedback."""
+    """Orchestrates multiple agents with Firecrawl integration (No Human-in-the-Loop)."""
     
-    def __init__(self, openai_api_key: Optional[str] = None):
+    def __init__(self, openai_api_key: Optional[str] = None, firecrawl_api_key: Optional[str] = None):
         self.api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OpenAI API key is required.")
         
-        # Initialize all agents
+        # Load Firecrawl API key from environment if not provided
+        self.firecrawl_api_key = firecrawl_api_key or os.getenv("FIRECRAWL_API_KEY")
+        
+        # Initialize all agents with Firecrawl support for TrendSurfer and TopicCrawler
         self.agents = {
-            "TrendSurfer": TrendSurfer(self.api_key),
-            "TopicCrawler": TopicCrawler(self.api_key),
+            "TrendSurfer": TrendSurfer(self.api_key, self.firecrawl_api_key),
+            "TopicCrawler": TopicCrawler(self.api_key, self.firecrawl_api_key),
             "ScholarSearcher": ScholarSearcher(self.api_key),
             "GreyScout": GreyScout(self.api_key)
         }
         
-        self.llm = ChatOpenAI(model="gpt-4", temperature=0.3, openai_api_key=self.api_key)
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3, openai_api_key=self.api_key)  # gpt-4o-mini, gpt-4o
         self.all_results: List[LiteratureItem] = []
         self.round_results: Dict[int, List[LiteratureItem]] = {}
     
@@ -574,6 +707,45 @@ class MultiAgentOrchestrator:
         
         ranked_papers.sort(key=lambda x: x.relevance_score or 0, reverse=True)
         return ranked_papers
+    
+    def run_automated_search(
+        self,
+        research_topic: str,
+        max_results_per_agent: int = 10
+    ) -> List[LiteratureItem]:
+        """Run automated single-round search without human feedback."""
+        print(f"\n{'='*70}")
+        print(f"AUTOMATED LITERATURE SEARCH WITH FIRECRAWL")
+        print(f"Topic: {research_topic}")
+        print(f"{'='*70}\n")
+        
+        all_results = []
+        
+        for agent_name, agent in self.agents.items():
+            print(f"\n--- {agent_name} ---")
+            
+            # Refine query based on agent specialty (no feedback)
+            search_query = agent.refine_query(research_topic, feedback=None)
+            print(f"Generated {len(search_query.queries)} queries")
+            print(f"Keywords: {', '.join(search_query.keywords[:5])}...")
+            
+            # Execute searches
+            for query in search_query.queries[:2]:  # Use top 2 queries per agent
+                results = agent.search(query, max_results_per_agent)
+                all_results.extend(results)
+                print(f"  Found {len(results)} items for query: {query[:50]}...")
+        
+        # Deduplicate
+        unique_results = self._deduplicate(all_results)
+        print(f"\n[Orchestrator] Total unique items found: {len(unique_results)}")
+        
+        # Rank by relevance
+        ranked_results = self._rank_by_relevance(unique_results, research_topic, feedback=None)
+        
+        # Store results
+        self.all_results = ranked_results
+        
+        return ranked_results
     
     def collect_human_feedback(self, round_number: int) -> HumanFeedback:
         """Collect feedback from human researcher (interactive)."""

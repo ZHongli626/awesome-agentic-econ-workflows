@@ -93,7 +93,7 @@ class Contextualizer:
         self.agent_name = "Contextualizer"
         self.api_key = openai_api_key
         self.llm = ChatOpenAI(
-            model="gpt-4",
+            model="gpt-4o-mini",
             temperature=0.5,
             openai_api_key=self.api_key
         )
@@ -200,7 +200,7 @@ class Finalizer:
         self.agent_name = "Finalizer"
         self.api_key = openai_api_key
         self.llm = ChatOpenAI(
-            model="gpt-4",
+            model="gpt-4o-mini",
             temperature=0.3,
             openai_api_key=self.api_key
         )
