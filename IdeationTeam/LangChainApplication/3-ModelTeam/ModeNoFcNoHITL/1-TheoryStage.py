@@ -546,9 +546,18 @@ class TheoryStageOrchestrator:
         literature_items = literature_batch.get('literature_items', [])
         literature_insights = literature_batch.get('insights', [])
         
+        # Convert research questions to ResearchQuestion objects if they're dicts
+        rq_objects = []
+        for rq in research_questions[:max_frameworks]:
+            if isinstance(rq, dict):
+                rq_obj = ResearchQuestion(**rq)
+            else:
+                rq_obj = rq
+            rq_objects.append(rq_obj)
+        
         # Develop frameworks for top research questions
         frameworks = []
-        for rq in research_questions[:max_frameworks]:
+        for rq in rq_objects:
             framework = self.theorist.develop_framework(
                 research_question=rq,
                 literature_items=literature_items,

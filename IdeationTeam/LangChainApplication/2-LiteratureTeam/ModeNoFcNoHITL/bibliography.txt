@@ -1,0 +1,13 @@
+BIBLIOGRAPHY
+======================================================================
+
+[A2024] A Qualitative Theory of Cognitive Attitudes and their Change. (2024). Research Paper.
+
+[Clustering2024] Clustering Memes in Social Media. (2024). Research Paper.
+
+[Increasing2024] Increasing Systemic Resilience to Socioeconomic Challenges: Modeling the Dynamics of Liquidity Flows and Systemic Risks Using Navier-Stokes Equations. (2024). Research Paper.
+
+[Measuring2024] Measuring social spam and the effect of bots on information diffusion in social media. (2024). Research Paper.
+
+[Multitask2024] Multitask learning for recognizing stress and depression in social media. (2024). Research Paper.
+

@@ -1,0 +1,38 @@
+Literature Review
+=================
+
+ABSTRACT
+----------------------------------------------------------------------
+This review synthesizes recent research findings and identifies key gaps.
+
+INTRODUCTION
+----------------------------------------------------------------------
+This literature review examines recent research in the field.
+
+DATA ANALYSIS OF SOCIAL MEDIA STREAMS. APPROACHES
+----------------------------------------------------------------------
+This section reviews research on Data analysis of social media streams..
+
+EXTENSION OF EXISTING LOGIC APPROACHES
+----------------------------------------------------------------------
+This section reviews research on Extension of existing logic.
+
+QUANTITATIVE ANALYSIS OF SOCIAL MEDIA INTERACTIONS APPROACHES
+----------------------------------------------------------------------
+This section reviews research on Quantitative analysis of social media interactions.
+
+MACHINE LEARNING TECHNIQUES APPROACHES
+----------------------------------------------------------------------
+This section reviews research on Machine learning techniques.
+
+QUANTITATIVE ASSESSMENT OF LIQUIDITY FLOWS. APPROACHES
+----------------------------------------------------------------------
+This section reviews research on Quantitative assessment of liquidity flows..
+
+RESEARCH GAPS AND FUTURE DIRECTIONS
+----------------------------------------------------------------------
+Several research gaps have been identified in the literature.
+
+SYNTHESIS AND CONCLUSIONS
+----------------------------------------------------------------------
+This review has identified several important research gaps and future directions.
